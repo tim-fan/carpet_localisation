@@ -1,0 +1,5 @@
+[run]
+include =
+    cbl_particle_filter/*
+omit =
+    cbl_particle_filter/tests/*
