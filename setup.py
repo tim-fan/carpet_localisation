@@ -6,6 +6,7 @@ import sys
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
+
 class Tox(TestCommand):
     user_options = [('tox-args=', 'a', 'Arguments to pass to tox')]
 
@@ -36,7 +37,8 @@ def read_content(filepath):
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "License :: OSI Approved ::"
+    " GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.7",
@@ -50,7 +52,10 @@ long_description = (
     read_content("README.rst") +
     read_content(os.path.join("docs/source", "CHANGELOG.rst")))
 
-requires = ['setuptools']
+requires = [
+    'setuptools',
+    'pfilter @ git+https://github.com/johnhw/pfilter.git',
+]
 
 extras_require = {
     'reST': ['Sphinx'],
