@@ -47,36 +47,37 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
-
-long_description = (
-    read_content("README.md") +
-    read_content(os.path.join("docs/source", "CHANGELOG.rst")))
+long_description = (read_content("README.md") +
+                    read_content(os.path.join("docs/source", "CHANGELOG.rst")))
 
 requires = [
     'setuptools',
     'pfilter @ git+https://github.com/johnhw/pfilter.git',
     'scipy',
+    'matplotlib',
 ]
 
 extras_require = {
     'reST': ['Sphinx'],
-    }
+}
 if os.environ.get('READTHEDOCS', None):
     extras_require['reST'].append('recommonmark')
 
-setup(name='cbl_particle_filter',
-      version='0.1.0',
-      description='##### ToDo: Rewrite me #####',
-      long_description=long_description,
-      long_description_content_type='text/x-rst',
-      author='Tim Fanselow',
-      author_email='author@email.com',
-      url='https://github.com/tim-fan/cbl_particle_filter',
-      classifiers=classifiers,
-      packages=['cbl_particle_filter'],
-      data_files=[],
-      install_requires=requires,
-      include_package_data=True,
-      extras_require=extras_require,
-      tests_require=['tox'],
-      cmdclass={'test': Tox},)
+setup(
+    name='cbl_particle_filter',
+    version='0.1.0',
+    description='##### ToDo: Rewrite me #####',
+    long_description=long_description,
+    long_description_content_type='text/x-rst',
+    author='Tim Fanselow',
+    author_email='author@email.com',
+    url='https://github.com/tim-fan/cbl_particle_filter',
+    classifiers=classifiers,
+    packages=['cbl_particle_filter'],
+    data_files=[],
+    install_requires=requires,
+    include_package_data=True,
+    extras_require=extras_require,
+    tests_require=['tox'],
+    cmdclass={'test': Tox},
+)

@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass
 import numpy as np
-from scipy.stats import norm, gamma, uniform
-from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample 
+from scipy.stats import norm, gamma, uniform, circmean
+from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
 from .carpet_map import CarpetMap
+
 
 @dataclass
 class Pose:
@@ -12,23 +13,48 @@ class Pose:
     y: float
     heading: float
 
+
 @dataclass
 class OdomMeasurement:
     dx: float
     dy: float
     dheading: float
 
+
 @dataclass
 class ColorMeasurement:
     color_index: int
 
 
+def add_poses(current_poses: np.array, pose_increments: np.array) -> np.array:
+    """
+    add pose_increments to current_poses, interpreting pose_increments in the frame of
+    current_poses
+
+    poses expected as nx3 matrix for n poses, with colums [x,y,heading]
+    """
+    current_x = current_poses[:, 0]
+    current_y = current_poses[:, 1]
+    current_heading = current_poses[:, 2]
+
+    inc_x = pose_increments[:, 0]
+    inc_y = pose_increments[:, 1]
+    inc_heading = pose_increments[:, 2]
+
+    result_x = current_x + inc_x * np.cos(current_heading) - inc_y * np.sin(
+        current_heading)
+    result_y = current_y + inc_x * np.sin(current_heading) + inc_y * np.cos(
+        current_heading)
+    result_heading = current_heading + inc_heading
+
+    return np.column_stack([result_x, result_y, result_heading])
+
 
 class CarpetBasedParticleFilter():
-    def __init__(self, carpet_map:CarpetMap):
+    def __init__(self, carpet_map: CarpetMap):
         self.carpet_map = carpet_map
-        self.current_pose = Pose(x=0,y=0,heading=0)
-
+        self.current_pose = Pose(x=0, y=0, heading=0)
+        WEIGHT_FN_P = 1.0
 
         # initialisation of particle filter implementation
         # refer https://github.com/johnhw/pfilter/blob/master/README.md
@@ -37,41 +63,49 @@ class CarpetBasedParticleFilter():
         map_x_size = self.carpet_map.grid.shape[1] * self.carpet_map.cell_size
         map_y_size = self.carpet_map.grid.shape[0] * self.carpet_map.cell_size
         prior_fn = independent_sample([
-            uniform(loc=0, scale=map_x_size).rvs, 
+            uniform(loc=0, scale=map_x_size).rvs,
             uniform(loc=0, scale=map_y_size).rvs,
-            uniform(loc=0, scale=2*np.pi).rvs, 
+            uniform(loc=0, scale=2 * np.pi).rvs,
         ])
 
-        def observe_fn(state: np.array) -> np.array:
+        def observe_fn(state: np.array, **kwargs) -> np.array:
             return self.carpet_map.get_color_at_coords(state)
 
-        def weight_fn(hyp_observed:np.array, real_observed:np.array):
+        def weight_fn(hyp_observed: np.array, real_observed: np.array,
+                      **kwargs):
             """
             weight p for correct observations, 1-p for incorrect
             """
-            p = 0.9
+            p = WEIGHT_FN_P
 
-            correct_observation = hyp_observed == real_observed
+            correct_observation = np.squeeze(hyp_observed) == np.squeeze(
+                real_observed)
 
-            return correct_observation * p + ~correct_observation * (1-p)
+            weights = correct_observation * p + ~correct_observation * (1 - p)
+            return weights
 
-        def no_motion_update(x):
-            """
-            Placeholder until odom-based updates are implemented
-            """
-            return x
+        def odom_update(x: np.array, odom: np.array) -> np.array:
+            return add_poses(x, np.array([odom]))
 
-        self._pfilter = ParticleFilter(
-            prior_fn=prior_fn, 
-            observe_fn=observe_fn,
-            n_particles=200,
-            dynamics_fn=no_motion_update,
-            noise_fn=lambda x: 
-                        gaussian_noise(x, sigmas=[0.2, 0.2, 0.05]),
-            weight_fn=weight_fn,
-            resample_proportion=0.1,
-            column_names = columns
-        )
+        self._pfilter = ParticleFilter(prior_fn=prior_fn,
+                                       observe_fn=observe_fn,
+                                       n_particles=200,
+                                       dynamics_fn=odom_update,
+                                       noise_fn=lambda x, odom: gaussian_noise(
+                                           x, sigmas=[0.05, 0.05, 0.05]),
+                                       weight_fn=weight_fn,
+                                       resample_proportion=0.1,
+                                       column_names=columns)
 
-    def update(self, odom:OdomMeasurement, color:ColorMeasurement):
-        self._pfilter.update()
+    def update(self, odom: OdomMeasurement, color: ColorMeasurement):
+        self._pfilter.update(color.color_index,
+                             odom=np.array([odom.dx, odom.dy, odom.dheading]))
+
+    def get_current_pose(self):
+        state = self._pfilter.mean_state
+        state[2] = circmean(
+            self._pfilter.particles[:, 2])  # take circular mean for heading
+        return Pose(x=state[0], y=state[1], heading=state[2])
+
+    def plot(self):
+        self.carpet_map.plot()
