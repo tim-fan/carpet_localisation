@@ -55,6 +55,7 @@ long_description = (
 requires = [
     'setuptools',
     'pfilter @ git+https://github.com/johnhw/pfilter.git',
+    'scipy',
 ]
 
 extras_require = {
