@@ -17,7 +17,7 @@ def plot_map(carpet_map: CarpetMap, show=True):
         ]) / 255)
     map_x_size = carpet_map.grid.shape[1] * carpet_map.cell_size
     map_y_size = carpet_map.grid.shape[0] * carpet_map.cell_size
-    plt.imshow(
+    img = plt.imshow(
         np.flipud(carpet_map.grid),
         origin="lower",
         extent=[0, map_x_size, 0, map_y_size],
@@ -25,6 +25,8 @@ def plot_map(carpet_map: CarpetMap, show=True):
     )
     if show:
         plt.show()
+
+    return img
 
 
 def plot_particles(state: np.array, show=True, color='red'):
@@ -37,9 +39,11 @@ def plot_particles(state: np.array, show=True, color='red'):
     heading = state[:, 2]
     dx = np.cos(heading) * arrow_length
     dy = np.sin(heading) * arrow_length
-    plt.quiver(x, y, dx, dy, color=color)
+    quiver = plt.quiver(x, y, dx, dy, color=color)
     if show:
         plt.show()
+
+    return quiver
 
 
 def plot_pose(x, y, heading, show=True, color="green"):
@@ -51,13 +55,15 @@ def plot_pose(x, y, heading, show=True, color="green"):
     width = 0.05
     dx = np.cos(heading) * arrow_length
     dy = np.sin(heading) * arrow_length
-    plt.arrow(x,
-              y,
-              dx,
-              dy,
-              width=width,
-              facecolor=color,
-              linewidth=1,
-              edgecolor="black")
+    arrow = plt.arrow(x,
+                      y,
+                      dx,
+                      dy,
+                      width=width,
+                      facecolor=color,
+                      linewidth=1,
+                      edgecolor="black")
     if show:
         plt.show()
+
+    return arrow

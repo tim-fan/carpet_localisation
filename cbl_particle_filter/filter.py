@@ -1,6 +1,7 @@
 """filter."""
 
 from dataclasses import dataclass
+from typing import Optional, Tuple, List
 import numpy as np
 from scipy.stats import norm, gamma, uniform, circmean
 from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
@@ -109,3 +110,55 @@ class CarpetBasedParticleFilter():
 
     def plot(self):
         self.carpet_map.plot()
+
+
+def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
+                                            Optional[Pose]]]):
+    """
+    Run the filter over given input data
+    Input data provided as list of Tuples of odom, color, and optionally ground truth pose
+    """
+    plot = True
+
+    if plot:
+        from .visualisation import plot_map, plot_particles, plot_pose
+        from matplotlib import pyplot as plt
+        import matplotlib.animation as animation
+        fig = plt.figure()
+        plt.ion()
+        plt.show()
+        frame_count = 0
+
+    # todo: use input data and map from args
+    from .simulator import make_input_data, make_map
+    carpet = make_map()
+    input_data = make_input_data(
+        odom_pos_noise_std_dev=0,
+        odom_heading_noise_std_dev=0,
+        color_noise=0,
+    )
+
+    particle_filter = CarpetBasedParticleFilter(carpet)
+    for odom, color, ground_truth_pose in input_data:
+        particle_filter.update(odom, color)
+
+        if plot:
+            plot_map(carpet, show=False)
+            plot_particles(particle_filter._pfilter.particles, show=False)
+            estimated_pose = particle_filter.get_current_pose()
+            estimated_pose_plt = plot_pose(
+                estimated_pose.x,
+                estimated_pose.y,
+                estimated_pose.heading,
+                color="red",
+                show=False,
+            )
+            plot_pose(ground_truth_pose.x,
+                      ground_truth_pose.y,
+                      ground_truth_pose.heading,
+                      show=False)
+            plt.draw()
+            plt.pause(0.01)
+            plt.savefig(f"/tmp/filter_frame_{str(frame_count).zfill(6)}.png")
+            frame_count += 1
+            plt.cla()
