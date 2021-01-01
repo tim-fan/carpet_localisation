@@ -2,8 +2,9 @@
 defines representation of carpet map
 """
 
-from typing import Tuple
+from typing import Tuple, Dict
 import numpy as np
+import cv2
 
 
 class CarpetMap:
@@ -63,3 +64,44 @@ def generate_random_map(shape: Tuple[int, int], cell_size,
     """
     return CarpetMap(grid=np.random.randint(0, high=n_colors, size=shape),
                      cell_size=cell_size)
+
+
+def save_map_as_png(carpet_map: CarpetMap, color_to_rgb_map: Dict,
+                    filepath: str):
+    """
+    Save a given map as a .png image
+    """
+
+    # convert the map grid (2d array of enums) to a cv2 image
+    # (3d array of bgr values)
+
+    image = np.zeros((
+        carpet_map.grid.shape[0],
+        carpet_map.grid.shape[1],
+        3,
+    ))
+
+    # there's probably a nicer way to iterate over the image..
+    # the idea is to replace each enum with the corresponding
+    # bgr values in the output image
+    for i in range(carpet_map.grid.shape[0]):
+        for j in range(carpet_map.grid.shape[1]):
+            color_enum = carpet_map.grid[i, j]
+            r, g, b = color_to_rgb_map[color_enum]
+            image[i, j, :] = (b, g, r)
+
+    # rather than write image with only one pixel per cell,
+    # upsample to `upsample_factor` pixels per cell
+    # this avoids interpolation issues in some image viewers
+    # and in gazebo
+    upsample_factor = 50
+    image = cv2.resize(
+        image,
+        dsize=(
+            image.shape[0] * upsample_factor,
+            image.shape[1] * upsample_factor,
+        ),
+        interpolation=cv2.INTER_NEAREST,
+    )
+
+    cv2.imwrite(filepath, image)

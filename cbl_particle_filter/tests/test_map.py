@@ -1,5 +1,7 @@
-from ..carpet_map import CarpetMap, generate_random_map
+from ..carpet_map import CarpetMap, generate_random_map, save_map_as_png
 import numpy as np
+import tempfile
+import os
 
 
 def make_test_map() -> CarpetMap:
@@ -73,3 +75,28 @@ def test_generate_random_map():
     if plot:
         from ..visualisation import plot_map
         plot_map(carpet)
+
+
+def test_save_map_as_png():
+    shape = (40, 40)
+    cell_size = 0.5
+    n_colors = 4
+    np.random.seed(123)
+    carpet = generate_random_map(shape, cell_size, n_colors)
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        outfile = f"{tmpdirname}/saved_map.png"
+
+        # To save the generated map for viewing, can
+        # override outfile here:
+        outfile = '/tmp/saved_map.png'
+
+        save_map_as_png(carpet,
+                        color_to_rgb_map={
+                            0: (80, 80, 80),
+                            1: (51, 204, 255),
+                            2: (241, 230, 218),
+                            3: (0, 51, 204),
+                        },
+                        filepath=outfile)
+        assert os.path.isfile(outfile)

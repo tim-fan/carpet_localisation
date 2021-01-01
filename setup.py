@@ -55,6 +55,7 @@ requires = [
     'pfilter @ git+https://github.com/johnhw/pfilter.git',
     'scipy',
     'matplotlib',
+    'opencv-python',
 ]
 
 extras_require = {
