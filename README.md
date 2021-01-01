@@ -16,8 +16,3 @@ Figure: playback of particle filter using simulated input data (see [simulator.p
 * large red arrow: estimated pose from particle filter
 * small red arrows: particle filter particles
 * blue/grey/beige background: carpet color pattern map
-
-## TODO:
-* Have created some simulated data for testing - now need to actually implement the filter
-* add basic visualisation for map and particles
-
