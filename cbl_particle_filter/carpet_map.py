@@ -6,6 +6,20 @@ from typing import Tuple, Dict
 import numpy as np
 import cv2
 
+# define a mapping of color enum values to RGB values, for visualisation
+# purposes.
+# Will hardcode this mapping for now, if this is ever migrated to different carpets
+# this will need to be made configurable
+COLOR_TO_RGB_MAP = {
+    0: (80, 80, 80),
+    1: (51, 204, 255),
+    2: (241, 230, 218),
+    3: (0, 51, 204),
+}
+
+# hardcoded factor to use when saving maps as png files
+PNG_UPSAMPLE_FACTOR = 50
+
 
 class CarpetMap:
     """
@@ -34,16 +48,18 @@ class CarpetMap:
         self.grid = grid
         self.cell_size = cell_size
 
-        # maintain a mapping of color enum values to RGB values, for visualisation
-        # purposes.
-        # Will hardcode this mapping for now, if this is ever migrated to different carpets
-        # this will need to be made configurable
-        self.color_to_rgb_map = {
-            0: (80, 80, 80),
-            1: (51, 204, 255),
-            2: (241, 230, 218),
-            3: (0, 51, 204),
-        }
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return np.all(
+                self.grid == other.grid) and self.cell_size == other.cell_size
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return f"{self.grid.shape[0]} x {self.grid.shape[1]} carpet map (cell size {self.cell_size}m)"
 
     def get_color_at_coords(self, coords: np.array) -> np.array:
         """
@@ -68,11 +84,11 @@ class CarpetMap:
         return colors
 
 
-def generate_random_map(shape: Tuple[int, int], cell_size,
-                        n_colors: int) -> CarpetMap:
+def generate_random_map(shape: Tuple[int, int], cell_size) -> CarpetMap:
     """
-    Generate a random map of the given size with the given number of colors
+    Generate a random map of the given size
     """
+    n_colors = len(COLOR_TO_RGB_MAP.keys())
     return CarpetMap(grid=np.random.randint(0, high=n_colors, size=shape),
                      cell_size=cell_size)
 
@@ -97,19 +113,18 @@ def save_map_as_png(carpet_map: CarpetMap, filepath: str):
     for i in range(carpet_map.grid.shape[0]):
         for j in range(carpet_map.grid.shape[1]):
             color_enum = carpet_map.grid[i, j]
-            r, g, b = carpet_map.color_to_rgb_map[color_enum]
+            r, g, b = COLOR_TO_RGB_MAP[color_enum]
             image[i, j, :] = (b, g, r)
 
     # rather than write image with only one pixel per cell,
     # upsample to `upsample_factor` pixels per cell
     # this avoids interpolation issues in some image viewers
     # and in gazebo
-    upsample_factor = 50
     image = cv2.resize(
         image,
         dsize=(
-            image.shape[0] * upsample_factor,
-            image.shape[1] * upsample_factor,
+            image.shape[0] * PNG_UPSAMPLE_FACTOR,
+            image.shape[1] * PNG_UPSAMPLE_FACTOR,
         ),
         interpolation=cv2.INTER_NEAREST,
     )
@@ -117,6 +132,34 @@ def save_map_as_png(carpet_map: CarpetMap, filepath: str):
     cv2.imwrite(filepath, image)
 
 
-def load_map_from_png(filepath: str) -> CarpetMap:
-    #TODO: implement
-    pass
+def load_map_from_png(filepath: str, cell_size: float) -> CarpetMap:
+    """
+    Loads map from png file
+    cell_size: size in m of each pixel of the input image
+    """
+    print(filepath)
+    image = cv2.imread(filepath)
+
+    # undo the upsampling:
+    image = cv2.resize(
+        image,
+        dsize=(
+            int(image.shape[0] / PNG_UPSAMPLE_FACTOR),
+            int(image.shape[1] / PNG_UPSAMPLE_FACTOR),
+        ),
+        interpolation=cv2.INTER_NEAREST,
+    )
+
+    im_height, im_width, _ = image.shape
+    grid = np.zeros((im_height, im_width), dtype=np.int)
+
+    # iterate through image and convert RGB values back to enums (ints)
+    rgb_to_color_map = {v: k for k, v in COLOR_TO_RGB_MAP.items()}
+    for i in range(im_height):
+        for j in range(im_width):
+            b, g, r = image[i, j, :]
+            grid[i, j] = rgb_to_color_map[(r, g, b)]
+
+    print(image.shape)
+
+    return CarpetMap(grid, cell_size=cell_size)

@@ -1,7 +1,9 @@
-from ..carpet_map import CarpetMap, generate_random_map, save_map_as_png, load_map_from_png
-import numpy as np
+import importlib.resources as pkg_resources
 import tempfile
 import os
+import numpy as np
+from ..carpet_map import CarpetMap, generate_random_map, save_map_as_png, load_map_from_png
+from . import data
 
 
 def make_test_map() -> CarpetMap:
@@ -62,8 +64,8 @@ def test_get_color_at_coords():
 def test_generate_random_map():
     shape = (10, 20)
     cell_size = 0.5
-    n_colors = 4
-    carpet = generate_random_map(shape, cell_size, n_colors)
+    n_colors = 4  # based on hardcoded colors in carpet_map.py
+    carpet = generate_random_map(shape, cell_size)
 
     assert isinstance(carpet, CarpetMap)
     assert carpet.cell_size == cell_size
@@ -80,9 +82,8 @@ def test_generate_random_map():
 def test_save_map_as_png():
     shape = (40, 40)
     cell_size = 0.5
-    n_colors = 4
     np.random.seed(123)
-    carpet = generate_random_map(shape, cell_size, n_colors)
+    carpet = generate_random_map(shape, cell_size)
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         outfile = f"{tmpdirname}/saved_map.png"
@@ -96,6 +97,16 @@ def test_save_map_as_png():
 
 
 def test_load_map_from_png():
-    test_map_png = "todo: save a test map in a test data directory"
-    carpet = load_map_from_png(test_map_png)
-    assert isinstance(carpet, CarpetMap)
+
+    with pkg_resources.path(data, "random_map.png") as map_png_path:
+
+        carpet = load_map_from_png(str(map_png_path), cell_size=0.5)
+
+    # generate the exepected result
+    # (the saved carpet was generated the same way)
+    shape = (40, 40)
+    cell_size = 0.5
+    np.random.seed(123)
+    expected_carpet = generate_random_map(shape, cell_size)
+
+    assert carpet == expected_carpet
