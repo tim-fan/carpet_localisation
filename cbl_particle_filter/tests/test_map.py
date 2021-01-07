@@ -1,4 +1,4 @@
-from ..carpet_map import CarpetMap, generate_random_map, save_map_as_png
+from ..carpet_map import CarpetMap, generate_random_map, save_map_as_png, load_map_from_png
 import numpy as np
 import tempfile
 import os
@@ -89,14 +89,13 @@ def test_save_map_as_png():
 
         # To save the generated map for viewing, can
         # override outfile here:
-        outfile = '/tmp/saved_map.png'
+        # outfile = '/tmp/saved_map.png'
 
-        save_map_as_png(carpet,
-                        color_to_rgb_map={
-                            0: (80, 80, 80),
-                            1: (51, 204, 255),
-                            2: (241, 230, 218),
-                            3: (0, 51, 204),
-                        },
-                        filepath=outfile)
+        save_map_as_png(carpet, filepath=outfile)
         assert os.path.isfile(outfile)
+
+
+def test_load_map_from_png():
+    test_map_png = "todo: save a test map in a test data directory"
+    carpet = load_map_from_png(test_map_png)
+    assert isinstance(carpet, CarpetMap)

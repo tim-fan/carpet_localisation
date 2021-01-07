@@ -34,6 +34,17 @@ class CarpetMap:
         self.grid = grid
         self.cell_size = cell_size
 
+        # maintain a mapping of color enum values to RGB values, for visualisation
+        # purposes.
+        # Will hardcode this mapping for now, if this is ever migrated to different carpets
+        # this will need to be made configurable
+        self.color_to_rgb_map = {
+            0: (80, 80, 80),
+            1: (51, 204, 255),
+            2: (241, 230, 218),
+            3: (0, 51, 204),
+        }
+
     def get_color_at_coords(self, coords: np.array) -> np.array:
         """
         lookup color (int) in map at given x,y coordinates (in meters)
@@ -66,8 +77,7 @@ def generate_random_map(shape: Tuple[int, int], cell_size,
                      cell_size=cell_size)
 
 
-def save_map_as_png(carpet_map: CarpetMap, color_to_rgb_map: Dict,
-                    filepath: str):
+def save_map_as_png(carpet_map: CarpetMap, filepath: str):
     """
     Save a given map as a .png image
     """
@@ -87,7 +97,7 @@ def save_map_as_png(carpet_map: CarpetMap, color_to_rgb_map: Dict,
     for i in range(carpet_map.grid.shape[0]):
         for j in range(carpet_map.grid.shape[1]):
             color_enum = carpet_map.grid[i, j]
-            r, g, b = color_to_rgb_map[color_enum]
+            r, g, b = carpet_map.color_to_rgb_map[color_enum]
             image[i, j, :] = (b, g, r)
 
     # rather than write image with only one pixel per cell,
@@ -105,3 +115,8 @@ def save_map_as_png(carpet_map: CarpetMap, color_to_rgb_map: Dict,
     )
 
     cv2.imwrite(filepath, image)
+
+
+def load_map_from_png(filepath: str) -> CarpetMap:
+    #TODO: implement
+    pass
