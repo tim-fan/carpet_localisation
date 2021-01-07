@@ -16,3 +16,22 @@ Figure: playback of particle filter using simulated input data (see [simulator.p
 * large red arrow: estimated pose from particle filter
 * small red arrows: particle filter particles
 * blue/grey/beige background: carpet color pattern map
+
+## Dev setup:
+
+```
+git clone git@github.com:tim-fan/carpet_localisation.git
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements-dev.txt
+pip install -e .
+```
+
+## Run tests
+```bash
+pytest .
+```
+Or to view output of plotting tests:
+```bash
+pytest . --show_plot True
+```

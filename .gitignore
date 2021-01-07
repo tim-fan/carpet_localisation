@@ -4,6 +4,7 @@
 *.pyc
 .tox/
 _build/
+venv/
 build
 dist/
 .coverage
