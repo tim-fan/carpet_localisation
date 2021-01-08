@@ -69,7 +69,6 @@ class CarpetBasedParticleFilter():
         and can be saved with CarpetBasedParticleFilter.write_input_log(logpath)
         """
         self.carpet_map = carpet_map
-        self.current_pose = Pose(x=0, y=0, heading=0)
         self.log_inputs = log_inputs
         self.input_log = []
 
@@ -132,13 +131,14 @@ class CarpetBasedParticleFilter():
             self.input_log.append((odom, color, ground_truth))
 
     def get_current_pose(self) -> Pose:
-        state = self._pfilter.mean_state
-        state[2] = circmean(
+        mean_x = np.mean(self._pfilter.particles[:, 0])
+        mean_y = np.mean(self._pfilter.particles[:, 1])
+        mean_heading = circmean(
             self._pfilter.particles[:, 2])  # take circular mean for heading
-        return Pose(x=state[0], y=state[1], heading=state[2])
+        return Pose(x=mean_x, y=mean_y, heading=mean_heading)
 
-    def plot(self) -> None:
-        self.carpet_map.plot()
+    def get_particles(self) -> np.ndarray:
+        return self._pfilter.particles
 
     def write_input_log(self, log_path: str) -> None:
         assert self.log_inputs, "Error - requested 'write_input_log', but input logging is disabled"
@@ -147,7 +147,7 @@ class CarpetBasedParticleFilter():
 
 
 def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
-                                            Optional[Pose]]]):
+                                            Optional[Pose]]], map: CarpetMap):
     """
     Run the filter over given input data
     Input data provided as list of Tuples of odom, color, and optionally ground truth pose
@@ -181,16 +181,11 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
             plot_particles(particle_filter._pfilter.particles, show=False)
             estimated_pose = particle_filter.get_current_pose()
             estimated_pose_plt = plot_pose(
-                estimated_pose.x,
-                estimated_pose.y,
-                estimated_pose.heading,
+                estimated_pose,
                 color="red",
                 show=False,
             )
-            plot_pose(ground_truth_pose.x,
-                      ground_truth_pose.y,
-                      ground_truth_pose.heading,
-                      show=False)
+            plot_pose(ground_truth_pose, show=False)
             plt.draw()
             plt.pause(0.01)
             plt.savefig(f"/tmp/filter_frame_{str(frame_count).zfill(6)}.png")

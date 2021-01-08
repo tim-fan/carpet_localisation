@@ -27,17 +27,11 @@ def test_filter_perfect_data():
             plot_particles(particle_filter._pfilter.particles, show=False)
             estimated_pose = particle_filter.get_current_pose()
             plot_pose(
-                estimated_pose.x,
-                estimated_pose.y,
-                estimated_pose.heading,
+                estimated_pose,
                 color="red",
                 show=False,
             )
-            plot_pose(
-                ground_truth_pose.x,
-                ground_truth_pose.y,
-                ground_truth_pose.heading,
-            )
+            plot_pose(ground_truth_pose)
 
     estimated_pose = particle_filter.get_current_pose()
     pos_tol = 0.5  # meters

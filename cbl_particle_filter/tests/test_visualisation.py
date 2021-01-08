@@ -2,13 +2,16 @@ import numpy as np
 from scipy.stats import uniform
 
 from ..simulator import make_map
-from ..visualisation import plot_map, plot_particles, plot_pose
+from ..visualisation import plot_map, plot_particles, plot_pose, plot_filter
+from ..filter import CarpetBasedParticleFilter, Pose
 
 import pytest
+
 
 @pytest.fixture()
 def show(pytestconfig):
     return pytestconfig.getoption("show_plot")
+
 
 def make_random_particles() -> np.array:
     np.random.seed(123)
@@ -25,6 +28,7 @@ def test_plot_map(show):
     test_map = make_map()
     plot_map(test_map, show=show)
 
+
 def test_plot_particles(show):
     state = make_random_particles()
     plot_particles(state, show=show)
@@ -40,5 +44,10 @@ def test_plot_particles_on_map(show):
 def test_plot_pose_on_map(show):
     test_map = make_map()
     plot_map(test_map, show=False)
-    plot_pose(1, 1.5, np.pi, show=show)
+    plot_pose(Pose(1, 1.5, np.pi), show=show)
 
+
+def test_plot_filter(show):
+    test_map = make_map()
+    pf = CarpetBasedParticleFilter(test_map)
+    plot_filter(pf, show)
