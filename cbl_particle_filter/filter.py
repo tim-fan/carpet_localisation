@@ -7,6 +7,7 @@ import pickle
 from scipy.stats import norm, gamma, uniform, circmean
 from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
 from .carpet_map import CarpetMap
+from .colors import color_from_index
 
 
 @dataclass
@@ -72,7 +73,8 @@ class CarpetBasedParticleFilter():
         self.log_inputs = log_inputs
         self.input_log = []
 
-        WEIGHT_FN_P = 1.0
+        WEIGHT_FN_P = 0.95
+        N_PARTICLES = 500
 
         # initialisation of particle filter implementation
         # refer https://github.com/johnhw/pfilter/blob/master/README.md
@@ -107,7 +109,7 @@ class CarpetBasedParticleFilter():
 
         self._pfilter = ParticleFilter(prior_fn=prior_fn,
                                        observe_fn=observe_fn,
-                                       n_particles=200,
+                                       n_particles=N_PARTICLES,
                                        dynamics_fn=odom_update,
                                        noise_fn=lambda x, odom: gaussian_noise(
                                            x, sigmas=[0.05, 0.05, 0.05]),
@@ -147,12 +149,13 @@ class CarpetBasedParticleFilter():
 
 
 def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
-                                            Optional[Pose]]], map: CarpetMap):
+                                            Optional[Pose]]],
+                     carpet: CarpetMap,
+                     plot: bool = True):
     """
     Run the filter over given input data
     Input data provided as list of Tuples of odom, color, and optionally ground truth pose
     """
-    plot = True
 
     if plot:
         from .visualisation import plot_map, plot_particles, plot_pose
@@ -163,17 +166,12 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
         plt.show()
         frame_count = 0
 
-    # todo: use input data and map from args
-    from .simulator import make_input_data, make_map
-    carpet = make_map()
-    input_data = make_input_data(
-        odom_pos_noise_std_dev=0,
-        odom_heading_noise_std_dev=0,
-        color_noise=0,
-    )
-
     particle_filter = CarpetBasedParticleFilter(carpet)
     for odom, color, ground_truth_pose in input_data:
+        print(
+            f"update with color: {color_from_index(color.color_index).name}, odom:{odom}"
+        )
+
         particle_filter.update(odom, color)
 
         if plot:
@@ -185,7 +183,8 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
                 color="red",
                 show=False,
             )
-            plot_pose(ground_truth_pose, show=False)
+            if ground_truth_pose:
+                plot_pose(ground_truth_pose, show=False)
             plt.draw()
             plt.pause(0.01)
             plt.savefig(f"/tmp/filter_frame_{str(frame_count).zfill(6)}.png")

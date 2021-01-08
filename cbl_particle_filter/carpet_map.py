@@ -5,17 +5,7 @@ defines representation of carpet map
 from typing import Tuple, Dict
 import numpy as np
 import cv2
-
-# define a mapping of color enum values to RGB values, for visualisation
-# purposes.
-# Will hardcode this mapping for now, if this is ever migrated to different carpets
-# this will need to be made configurable
-COLOR_TO_RGB_MAP = {
-    0: (80, 80, 80),
-    1: (51, 204, 255),
-    2: (241, 230, 218),
-    3: (0, 51, 204),
-}
+from .colors import color_from_index, COLORS
 
 # hardcoded factor to use when saving maps as png files
 PNG_UPSAMPLE_FACTOR = 50
@@ -113,7 +103,7 @@ def save_map_as_png(carpet_map: CarpetMap, filepath: str):
     for i in range(carpet_map.grid.shape[0]):
         for j in range(carpet_map.grid.shape[1]):
             color_enum = carpet_map.grid[i, j]
-            r, g, b = COLOR_TO_RGB_MAP[color_enum]
+            r, g, b = color_from_index(color_enum).rgb
             image[i, j, :] = (b, g, r)
 
     # rather than write image with only one pixel per cell,
@@ -154,7 +144,9 @@ def load_map_from_png(filepath: str, cell_size: float) -> CarpetMap:
     grid = np.zeros((im_height, im_width), dtype=np.int)
 
     # iterate through image and convert RGB values back to enums (ints)
-    rgb_to_color_map = {v: k for k, v in COLOR_TO_RGB_MAP.items()}
+    rgb_to_color_map = {}
+    for color in COLORS:
+        rgb_to_color_map[color.rgb] = color.index
     for i in range(im_height):
         for j in range(im_width):
             b, g, r = image[i, j, :]
