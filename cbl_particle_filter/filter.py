@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
 import numpy as np
+import pickle
 from scipy.stats import norm, gamma, uniform, circmean
 from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
 from .carpet_map import CarpetMap
@@ -51,10 +52,27 @@ def add_poses(current_poses: np.array, pose_increments: np.array) -> np.array:
     return np.column_stack([result_x, result_y, result_heading])
 
 
+def load_input_log(
+        log_path: str) -> List[Tuple[OdomMeasurement, ColorMeasurement, Pose]]:
+    """
+    Load an input log, as recorded by a CarpetBasedParticleFilter
+    """
+    with open(log_path, "rb") as f:
+        return pickle.load(f)
+
+
 class CarpetBasedParticleFilter():
-    def __init__(self, carpet_map: CarpetMap):
+    def __init__(self, carpet_map: CarpetMap, log_inputs: bool = False):
+        """
+        Initialise with a given map.
+        if `log_inputs` is set True, all inputs to `update` will be logged,
+        and can be saved with CarpetBasedParticleFilter.write_input_log(logpath)
+        """
         self.carpet_map = carpet_map
         self.current_pose = Pose(x=0, y=0, heading=0)
+        self.log_inputs = log_inputs
+        self.input_log = []
+
         WEIGHT_FN_P = 1.0
 
         # initialisation of particle filter implementation
@@ -98,18 +116,34 @@ class CarpetBasedParticleFilter():
                                        resample_proportion=0.1,
                                        column_names=columns)
 
-    def update(self, odom: OdomMeasurement, color: ColorMeasurement):
+    def update(self,
+               odom: OdomMeasurement,
+               color: ColorMeasurement,
+               ground_truth: Optional[Pose] = None) -> None:
+        """
+        Update the particle filter based on measured odom and color
+        If optional ground truth pose is provided, and if input logging is enabled, the 
+        ground truth pose will be logged.
+        """
         self._pfilter.update(color.color_index,
                              odom=np.array([odom.dx, odom.dy, odom.dheading]))
 
-    def get_current_pose(self):
+        if self.log_inputs:
+            self.input_log.append((odom, color, ground_truth))
+
+    def get_current_pose(self) -> Pose:
         state = self._pfilter.mean_state
         state[2] = circmean(
             self._pfilter.particles[:, 2])  # take circular mean for heading
         return Pose(x=state[0], y=state[1], heading=state[2])
 
-    def plot(self):
+    def plot(self) -> None:
         self.carpet_map.plot()
+
+    def write_input_log(self, log_path: str) -> None:
+        assert self.log_inputs, "Error - requested 'write_input_log', but input logging is disabled"
+        with open(log_path, 'wb') as f:
+            pickle.dump(self.input_log, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
