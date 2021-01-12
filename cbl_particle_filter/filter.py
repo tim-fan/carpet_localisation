@@ -79,17 +79,18 @@ class CarpetBasedParticleFilter():
         # initialisation of particle filter implementation
         # refer https://github.com/johnhw/pfilter/blob/master/README.md
 
-        columns = ["x", "y", "heading"]
+        columns = ["x", "y", "heading", "life_span"]
         map_x_size = self.carpet_map.grid.shape[1] * self.carpet_map.cell_size
         map_y_size = self.carpet_map.grid.shape[0] * self.carpet_map.cell_size
         prior_fn = independent_sample([
             uniform(loc=0, scale=map_x_size).rvs,
             uniform(loc=0, scale=map_y_size).rvs,
             uniform(loc=0, scale=2 * np.pi).rvs,
+            uniform(loc=0, scale=0).rvs,
         ])
 
         def observe_fn(state: np.array, **kwargs) -> np.array:
-            return self.carpet_map.get_color_at_coords(state)
+            return self.carpet_map.get_color_at_coords(state[:, 0:3])
 
         def weight_fn(hyp_observed: np.array, real_observed: np.array,
                       **kwargs):
@@ -105,14 +106,17 @@ class CarpetBasedParticleFilter():
             return weights
 
         def odom_update(x: np.array, odom: np.array) -> np.array:
-            return add_poses(x, np.array([odom]))
+            poses = add_poses(x[:, 0:3], np.array([odom]))
+            life_span = x[:, 3]
+            life_span += 1
+            return np.column_stack((poses, life_span))
 
         self._pfilter = ParticleFilter(prior_fn=prior_fn,
                                        observe_fn=observe_fn,
                                        n_particles=N_PARTICLES,
                                        dynamics_fn=odom_update,
                                        noise_fn=lambda x, odom: gaussian_noise(
-                                           x, sigmas=[0.05, 0.05, 0.05]),
+                                           x, sigmas=[0.05, 0.05, 0.05, 0]),
                                        weight_fn=weight_fn,
                                        resample_proportion=0.1,
                                        column_names=columns)
@@ -129,15 +133,14 @@ class CarpetBasedParticleFilter():
         self._pfilter.update(color.color_index,
                              odom=np.array([odom.dx, odom.dy, odom.dheading]))
 
+        print(self._pfilter.particles[:, 3])
+
         if self.log_inputs:
             self.input_log.append((odom, color, ground_truth))
 
     def get_current_pose(self) -> Pose:
-        try:
-            # map_state attribute only exists after an update
-            state = self._pfilter.map_state
-        except AttributeError:
-            state = [0, 0, 0]
+        oldest_particle = np.argmax(self._pfilter.particles[:, 3])
+        state = self._pfilter.particles[oldest_particle, :]
         return Pose(x=state[0], y=state[1], heading=state[2])
 
     def get_particles(self) -> np.ndarray:
