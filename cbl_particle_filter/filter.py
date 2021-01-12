@@ -133,8 +133,6 @@ class CarpetBasedParticleFilter():
         self._pfilter.update(color.color_index,
                              odom=np.array([odom.dx, odom.dy, odom.dheading]))
 
-        print(self._pfilter.particles[:, 3])
-
         if self.log_inputs:
             self.input_log.append((odom, color, ground_truth))
 
