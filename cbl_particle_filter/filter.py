@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, List
 import numpy as np
 import pickle
-from scipy.stats import norm, gamma, uniform, circmean
+from scipy.stats import norm, gamma, uniform
 from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
 from .carpet_map import CarpetMap
 from .colors import color_from_index
@@ -133,11 +133,8 @@ class CarpetBasedParticleFilter():
             self.input_log.append((odom, color, ground_truth))
 
     def get_current_pose(self) -> Pose:
-        mean_x = np.mean(self._pfilter.particles[:, 0])
-        mean_y = np.mean(self._pfilter.particles[:, 1])
-        mean_heading = circmean(
-            self._pfilter.particles[:, 2])  # take circular mean for heading
-        return Pose(x=mean_x, y=mean_y, heading=mean_heading)
+        map_state = self._pfilter.map_state
+        return Pose(x=map_state[0], y=map_state[1], heading=map_state[2])
 
     def get_particles(self) -> np.ndarray:
         return self._pfilter.particles
