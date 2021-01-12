@@ -78,7 +78,7 @@ def generate_random_map(shape: Tuple[int, int], cell_size) -> CarpetMap:
     """
     Generate a random map of the given size
     """
-    n_colors = len(COLOR_TO_RGB_MAP.keys())
+    n_colors = len(COLORS)
     return CarpetMap(grid=np.random.randint(0, high=n_colors, size=shape),
                      cell_size=cell_size)
 

@@ -18,6 +18,7 @@ def test_filter_perfect_data():
         color_noise=0,
     )
 
+    np.random.seed(12345)
     particle_filter = CarpetBasedParticleFilter(carpet)
     for odom, color, ground_truth_pose in simulated_data:
         particle_filter.update(odom, color)

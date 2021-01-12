@@ -133,8 +133,12 @@ class CarpetBasedParticleFilter():
             self.input_log.append((odom, color, ground_truth))
 
     def get_current_pose(self) -> Pose:
-        map_state = self._pfilter.map_state
-        return Pose(x=map_state[0], y=map_state[1], heading=map_state[2])
+        try:
+            # map_state attribute only exists after an update
+            state = self._pfilter.map_state
+        except AttributeError:
+            state = [0, 0, 0]
+        return Pose(x=state[0], y=state[1], heading=state[2])
 
     def get_particles(self) -> np.ndarray:
         return self._pfilter.particles
