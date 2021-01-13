@@ -51,11 +51,13 @@ long_description = (read_content("README.md") +
                     read_content(os.path.join("docs/source", "CHANGELOG.rst")))
 
 requires = [
-    'setuptools',
+    'docopt',
+    'matplotlib',
+    'numpy',
+    'opencv-python',
     'pfilter @ git+https://github.com/johnhw/pfilter.git',
     'scipy',
-    'matplotlib',
-    'opencv-python',
+    'setuptools',
 ]
 
 extras_require = {
@@ -79,6 +81,11 @@ setup(
     install_requires=requires,
     include_package_data=True,
     extras_require=extras_require,
+    entry_points={
+        'console_scripts': [
+            'carpet_map_csv_to_png=cbl_particle_filter.bin.carpet_map_csv_to_png:main'
+        ],
+    },
     tests_require=['tox'],
     cmdclass={'test': Tox},
 )
