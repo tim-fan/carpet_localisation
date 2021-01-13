@@ -3,12 +3,15 @@
 # Will hardcode this mapping for now, if this is ever migrated to different carpets
 # this will need to be made configurable
 
+from dataclasses import dataclass
+from typing import Tuple
 
+
+@dataclass
 class Color:
-    def __init__(self, index, name, rgb):
-        self.index = index
-        self.name = name
-        self.rgb = rgb
+    index: int
+    name: str
+    rgb: Tuple[int, int, int]
 
 
 BLACK = Color(0, "BLACK", (80, 80, 80))

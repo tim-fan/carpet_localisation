@@ -7,7 +7,7 @@ import pickle
 from scipy.stats import norm, gamma, uniform
 from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
 from .carpet_map import CarpetMap
-from .colors import color_from_index
+from .colors import color_from_index, Color
 
 
 @dataclass
@@ -22,11 +22,6 @@ class OdomMeasurement:
     dx: float
     dy: float
     dheading: float
-
-
-@dataclass
-class ColorMeasurement:
-    color_index: int
 
 
 def add_poses(current_poses: np.array, pose_increments: np.array) -> np.array:
@@ -53,8 +48,7 @@ def add_poses(current_poses: np.array, pose_increments: np.array) -> np.array:
     return np.column_stack([result_x, result_y, result_heading])
 
 
-def load_input_log(
-        log_path: str) -> List[Tuple[OdomMeasurement, ColorMeasurement, Pose]]:
+def load_input_log(log_path: str) -> List[Tuple[OdomMeasurement, Color, Pose]]:
     """
     Load an input log, as recorded by a CarpetBasedParticleFilter
     """
@@ -123,14 +117,14 @@ class CarpetBasedParticleFilter():
 
     def update(self,
                odom: OdomMeasurement,
-               color: ColorMeasurement,
+               color: Color,
                ground_truth: Optional[Pose] = None) -> None:
         """
         Update the particle filter based on measured odom and color
         If optional ground truth pose is provided, and if input logging is enabled, the 
         ground truth pose will be logged.
         """
-        self._pfilter.update(color.color_index,
+        self._pfilter.update(np.array([color.index]),
                              odom=np.array([odom.dx, odom.dy, odom.dheading]))
 
         if self.log_inputs:
@@ -150,7 +144,7 @@ class CarpetBasedParticleFilter():
             pickle.dump(self.input_log, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
+def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
                                             Optional[Pose]]],
                      carpet: CarpetMap,
                      plot: bool = True):
@@ -170,9 +164,7 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, ColorMeasurement,
 
     particle_filter = CarpetBasedParticleFilter(carpet)
     for odom, color, ground_truth_pose in input_data:
-        print(
-            f"update with color: {color_from_index(color.color_index).name}, odom:{odom}"
-        )
+        print(f"update with color: {color.name}, odom:{odom}")
 
         particle_filter.update(odom, color)
 

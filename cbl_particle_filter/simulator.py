@@ -5,7 +5,8 @@ Generates simulated inputs for testing the particle filter
 from typing import List, Tuple
 import numpy as np
 from .carpet_map import CarpetMap
-from .filter import OdomMeasurement, ColorMeasurement, Pose
+from .filter import OdomMeasurement, Pose
+from .colors import Color, COLORS, color_from_index
 
 
 def make_map() -> CarpetMap:
@@ -24,7 +25,7 @@ def make_input_data(
     odom_heading_noise_std_dev: float = 0.005,
     color_noise:
     float = 0.2,  # percent chance of making error in color classification
-) -> List[Tuple[OdomMeasurement, ColorMeasurement, Pose]]:
+) -> List[Tuple[OdomMeasurement, Color, Pose]]:
     """
     Simulate a circular drive.
     Start at x= 1.25, y=0.25, heading = 0
@@ -84,23 +85,22 @@ def make_input_data(
     color_ground_truth = carpet.get_color_at_coords(
         np.column_stack([x_ground_truth, y_ground_truth]))
 
-    # for adding noise to color measurements, assuming color set = [0,1,2,3]
-    # TODO: generalise for any input color set
-    color_set = [0, 1, 2, 3]
-    assert np.all(np.unique(carpet.grid) == color_set)
+    color_indices = sorted([c.index for c in COLORS])
+    n_colors = len(COLORS)
+    assert np.all(np.unique(carpet.grid) == color_indices)
 
     correct_choice_prob = 1 - color_noise
-    false_choice_prob = color_noise / (len(color_set) - 1)
+    false_choice_prob = color_noise / (n_colors - 1)
 
-    color_errors = np.random.choice(color_set,
+    color_errors = np.random.choice(color_indices,
                                     size=num_updates,
                                     p=[
                                         correct_choice_prob, false_choice_prob,
                                         false_choice_prob, false_choice_prob
                                     ])
-    colors = np.mod(color_ground_truth + color_errors, len(color_set))
+    colors = np.mod(color_ground_truth + color_errors, n_colors)
 
-    color_measurements = [ColorMeasurement(color_index=c) for c in colors]
+    color_measurements = [color_from_index[c] for c in colors]
 
     ground_truth_poses = [
         Pose(
