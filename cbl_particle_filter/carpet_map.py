@@ -5,7 +5,7 @@ defines representation of carpet map
 from typing import Tuple, Dict
 import numpy as np
 import cv2
-from .colors import color_from_index, COLORS
+from .colors import color_from_index, color_from_rgb, COLORS
 
 # hardcoded factor to use when saving maps as png files
 PNG_UPSAMPLE_FACTOR = 50
@@ -103,7 +103,7 @@ def save_map_as_png(carpet_map: CarpetMap, filepath: str):
     for i in range(carpet_map.grid.shape[0]):
         for j in range(carpet_map.grid.shape[1]):
             color_enum = carpet_map.grid[i, j]
-            r, g, b = color_from_index(color_enum).rgb
+            r, g, b = color_from_index[color_enum].rgb
             image[i, j, :] = (b, g, r)
 
     # rather than write image with only one pixel per cell,
@@ -144,13 +144,11 @@ def load_map_from_png(filepath: str, cell_size: float) -> CarpetMap:
     grid = np.zeros((im_height, im_width), dtype=np.int)
 
     # iterate through image and convert RGB values back to enums (ints)
-    rgb_to_color_map = {}
-    for color in COLORS:
-        rgb_to_color_map[color.rgb] = color.index
+
     for i in range(im_height):
         for j in range(im_width):
             b, g, r = image[i, j, :]
-            grid[i, j] = rgb_to_color_map[(r, g, b)]
+            grid[i, j] = color_from_rgb[(r, g, b)].index
 
     print(image.shape)
 
