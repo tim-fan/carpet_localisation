@@ -22,8 +22,8 @@ UNCLASSIFIED = Color(4, "UNCLASSIFIED", (0, 0, 0))
 
 COLORS = [BLACK, LIGHT_BLUE, BEIGE, DARK_BLUE]
 
-color_from_index = {color.index: color for color in COLORS}
+color_from_index = {color.index: color for color in COLORS + [UNCLASSIFIED]}
 
-color_from_name = {color.name: color for color in COLORS}
+color_from_name = {color.name: color for color in COLORS + [UNCLASSIFIED]}
 
-color_from_rgb = {color.rgb: color for color in COLORS}
+color_from_rgb = {color.rgb: color for color in COLORS + [UNCLASSIFIED]}
