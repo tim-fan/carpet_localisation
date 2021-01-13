@@ -7,7 +7,7 @@ import pickle
 from scipy.stats import norm, gamma, uniform
 from pfilter import ParticleFilter, gaussian_noise, squared_error, independent_sample
 from .carpet_map import CarpetMap
-from .colors import color_from_index, Color
+from .colors import color_from_index, Color, UNCLASSIFIED
 
 
 @dataclass
@@ -124,8 +124,11 @@ class CarpetBasedParticleFilter():
         If optional ground truth pose is provided, and if input logging is enabled, the 
         ground truth pose will be logged.
         """
-        self._pfilter.update(np.array([color.index]),
-                             odom=np.array([odom.dx, odom.dy, odom.dheading]))
+        odom_array = [odom.dx, odom.dy, odom.dheading]
+        if color == UNCLASSIFIED:
+            self._pfilter.update(observed=None, odom=odom_array)
+        else:
+            self._pfilter.update(np.array([color.index]), odom=odom_array)
 
         if self.log_inputs:
             self.input_log.append((odom, color, ground_truth))
