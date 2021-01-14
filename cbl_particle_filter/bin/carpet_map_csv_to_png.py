@@ -22,8 +22,6 @@ def main():
     csvfile = arguments['<input-csv>']
     pngfile = arguments['<output-png>']
 
-    # csv_data = pd.read_csv(csvfile, header=None, index_col=None)
-    # print(csv_data)
     carpet_grid = np.loadtxt(csvfile, delimiter=',', dtype=int)
 
     # Note cell_size is not used in writing png, so we don't need to use the
