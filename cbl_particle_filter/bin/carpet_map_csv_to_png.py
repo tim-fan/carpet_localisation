@@ -14,6 +14,7 @@ Usage:
 from docopt import docopt
 import numpy as np
 from cbl_particle_filter.carpet_map import CarpetMap, save_map_as_png
+from cbl_particle_filter.colors import UNCLASSIFIED
 
 
 def main():
@@ -22,7 +23,10 @@ def main():
     csvfile = arguments['<input-csv>']
     pngfile = arguments['<output-png>']
 
-    carpet_grid = np.loadtxt(csvfile, delimiter=',', dtype=int)
+    carpet_grid = np.genfromtxt(csvfile,
+                                delimiter=',',
+                                dtype=int,
+                                filling_values=UNCLASSIFIED.index)
 
     # Note cell_size is not used in writing png, so we don't need to use the
     # actual value
