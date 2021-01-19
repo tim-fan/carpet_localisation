@@ -80,7 +80,7 @@ def test_generate_random_map():
 
 
 def test_save_map_as_png():
-    shape = (40, 40)
+    shape = (20, 40)
     cell_size = 0.5
     np.random.seed(123)
     carpet = generate_random_map(shape, cell_size)
@@ -104,7 +104,7 @@ def test_load_map_from_png():
 
     # generate the exepected result
     # (the saved carpet was generated the same way)
-    shape = (40, 40)
+    shape = (20, 40)
     cell_size = 0.5
     np.random.seed(123)
     expected_carpet = generate_random_map(shape, cell_size)

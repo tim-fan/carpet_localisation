@@ -113,8 +113,8 @@ def save_map_as_png(carpet_map: CarpetMap, filepath: str):
     image = cv2.resize(
         image,
         dsize=(
-            image.shape[0] * PNG_UPSAMPLE_FACTOR,
             image.shape[1] * PNG_UPSAMPLE_FACTOR,
+            image.shape[0] * PNG_UPSAMPLE_FACTOR,
         ),
         interpolation=cv2.INTER_NEAREST,
     )
@@ -127,15 +127,14 @@ def load_map_from_png(filepath: str, cell_size: float) -> CarpetMap:
     Loads map from png file
     cell_size: size in m of each pixel of the input image
     """
-    print(filepath)
     image = cv2.imread(filepath)
 
     # undo the upsampling:
     image = cv2.resize(
         image,
         dsize=(
-            int(image.shape[0] / PNG_UPSAMPLE_FACTOR),
             int(image.shape[1] / PNG_UPSAMPLE_FACTOR),
+            int(image.shape[0] / PNG_UPSAMPLE_FACTOR),
         ),
         interpolation=cv2.INTER_NEAREST,
     )
@@ -149,7 +148,5 @@ def load_map_from_png(filepath: str, cell_size: float) -> CarpetMap:
         for j in range(im_width):
             b, g, r = image[i, j, :]
             grid[i, j] = color_from_rgb[(r, g, b)].index
-
-    print(image.shape)
 
     return CarpetMap(grid, cell_size=cell_size)
