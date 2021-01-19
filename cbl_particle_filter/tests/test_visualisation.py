@@ -3,7 +3,8 @@ from scipy.stats import uniform
 
 from ..simulator import make_map
 from ..visualisation import plot_map, plot_particles, plot_pose, plot_filter
-from ..filter import CarpetBasedParticleFilter, Pose
+from ..filter import CarpetBasedParticleFilter, Pose, OdomMeasurement
+from ..colors import LIGHT_BLUE
 
 import pytest
 
@@ -50,4 +51,8 @@ def test_plot_pose_on_map(show):
 def test_plot_filter(show):
     test_map = make_map()
     pf = CarpetBasedParticleFilter(test_map)
+
+    # particle filter is not initialised until first update
+    pf.update(OdomMeasurement(dx=0, dy=0, dheading=0), LIGHT_BLUE)
+
     plot_filter(pf, show)

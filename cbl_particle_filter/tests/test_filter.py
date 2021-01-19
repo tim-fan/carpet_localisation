@@ -2,7 +2,8 @@ import tempfile
 import pytest
 import numpy as np
 from ..simulator import make_map, make_input_data
-from ..filter import CarpetBasedParticleFilter, load_input_log
+from ..filter import CarpetBasedParticleFilter, load_input_log, OdomMeasurement
+from ..colors import LIGHT_BLUE
 
 
 def test_filter_perfect_data():
@@ -18,7 +19,7 @@ def test_filter_perfect_data():
         color_noise=0,
     )
 
-    np.random.seed(12345)
+    np.random.seed(123)
     particle_filter = CarpetBasedParticleFilter(carpet)
     for odom, color, ground_truth_pose in simulated_data:
         particle_filter.update(odom, color)
@@ -75,3 +76,34 @@ def test_log_inputs():
         logged_inputs = load_input_log(log_file)
 
     assert logged_inputs == input_data
+
+
+def test_init():
+    """
+    Particle filter initialisation:
+    Filter should initialise on first update, to a state where most particles are
+    located on tiles of the given color
+    """
+    np.random.seed(123)
+    carpet = make_map()
+    particle_filter = CarpetBasedParticleFilter(carpet)
+
+    color = LIGHT_BLUE
+
+    particle_filter._most_recent_color = LIGHT_BLUE
+    particle_filter._pfilter_init()
+
+    particles = particle_filter.get_particles()
+
+    color_of_tiles_under_the_particles = carpet.get_color_at_coords(
+        particles[:, 0:2])
+
+    # copying constants out of filter.py
+    # TODO: implement parameterisation
+    # in filter constructor
+    WEIGHT_FN_P = 0.95
+    N_PARTICLES = 500
+
+    assert sum(color_of_tiles_under_the_particles ==
+               LIGHT_BLUE.index) / N_PARTICLES == pytest.approx(WEIGHT_FN_P,
+                                                                abs=0.01)

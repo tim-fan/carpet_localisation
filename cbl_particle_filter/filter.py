@@ -66,6 +66,14 @@ class CarpetBasedParticleFilter():
         self.carpet_map = carpet_map
         self.log_inputs = log_inputs
         self.input_log = []
+        self._pfilter = None
+        self._most_recent_color = None  # used in pfilter initialisation fn
+
+    def _pfilter_init(self):
+        """
+        Setup the particle filter.
+
+        """
 
         WEIGHT_FN_P = 0.95
         N_PARTICLES = 500
@@ -76,12 +84,47 @@ class CarpetBasedParticleFilter():
         columns = ["x", "y", "heading", "life_span"]
         map_x_size = self.carpet_map.grid.shape[1] * self.carpet_map.cell_size
         map_y_size = self.carpet_map.grid.shape[0] * self.carpet_map.cell_size
-        prior_fn = independent_sample([
-            uniform(loc=0, scale=map_x_size).rvs,
-            uniform(loc=0, scale=map_y_size).rvs,
-            uniform(loc=0, scale=2 * np.pi).rvs,
-            uniform(loc=0, scale=0).rvs,
-        ])
+
+        def prior_fn(n_particles: int):
+            """
+            Sample n random particles from p(x|z)
+            i.e. if last color is BEIGE, return a sample
+            where proportion WEIGHT_FN_P of particles lie on
+            random beige cells, and proportion (1-WEIGHT_FN_P)
+            lie on other cells
+            """
+            # create a grid of sample probablilities, equal in shape
+            # to the map grid, such that the sum of all cells
+            # which match the most recent color equals WEIGHT_FN_P
+            # and the sum of all cells = 1.
+            p_mat = np.zeros_like(self.carpet_map.grid, dtype=float)
+            matching = self.carpet_map.grid == self._most_recent_color.index
+            p_mat[matching] = WEIGHT_FN_P / np.sum(matching)
+            p_mat[~matching] = (1 - WEIGHT_FN_P) / np.sum(~matching)
+
+            # sample from the grid using the probabilities from above
+            p_mat_flat = p_mat.flatten()
+            print(p_mat_flat)
+            selected_grid_linear_indices = np.random.choice(range(
+                len(p_mat_flat)),
+                                                            size=n_particles,
+                                                            p=p_mat_flat)
+            #convert linear indices back to grid indices
+            y_indices, x_indices = np.unravel_index(
+                selected_grid_linear_indices, self.carpet_map.grid.shape)
+
+            # convert sampled grid indices into x/y coordinates
+            # add noise to sample uniformly across selected grid cells
+            x_coords = (x_indices +
+                        uniform().rvs(n_particles)) * self.carpet_map.cell_size
+            y_coords = (self.carpet_map.grid.shape[0] -
+                        (y_indices + uniform().rvs(n_particles))
+                        ) * self.carpet_map.cell_size
+
+            heading = uniform(loc=0, scale=2 * np.pi).rvs(n_particles)
+            age = np.zeros_like(heading, dtype=float)
+
+            return np.column_stack([x_coords, y_coords, heading, age])
 
         def observe_fn(state: np.array, **kwargs) -> np.array:
             return self.carpet_map.get_color_at_coords(state[:, 0:3])
@@ -124,21 +167,31 @@ class CarpetBasedParticleFilter():
         If optional ground truth pose is provided, and if input logging is enabled, the 
         ground truth pose will be logged.
         """
+        if self.log_inputs:
+            self.input_log.append((odom, color, ground_truth))
+
+        self._most_recent_color = color
+
+        # if particle filter is not intialised, init it
+        if self._pfilter is None:
+            self._pfilter_init()
+
         odom_array = [odom.dx, odom.dy, odom.dheading]
         if color == UNCLASSIFIED:
             self._pfilter.update(observed=None, odom=odom_array)
         else:
             self._pfilter.update(np.array([color.index]), odom=odom_array)
 
-        if self.log_inputs:
-            self.input_log.append((odom, color, ground_truth))
-
     def get_current_pose(self) -> Pose:
+        if self._pfilter is None:
+            return None
         oldest_particle = np.argmax(self._pfilter.particles[:, 3])
         state = self._pfilter.particles[oldest_particle, :]
         return Pose(x=state[0], y=state[1], heading=state[2])
 
     def get_particles(self) -> np.ndarray:
+        if self._pfilter is None:
+            return None
         return self._pfilter.particles
 
     def write_input_log(self, log_path: str) -> None:
