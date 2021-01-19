@@ -51,6 +51,7 @@ long_description = (read_content("README.md") +
                     read_content(os.path.join("docs/source", "CHANGELOG.rst")))
 
 requires = [
+    "dataclasses; python_version < '3.7'",
     'docopt',
     'matplotlib',
     'numpy',
