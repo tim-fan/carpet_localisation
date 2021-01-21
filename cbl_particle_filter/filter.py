@@ -56,6 +56,10 @@ def load_input_log(log_path: str) -> List[Tuple[OdomMeasurement, Color, Pose]]:
         return pickle.load(f)
 
 
+WEIGHT_FN_P = 0.95
+N_PARTICLES = 500
+
+
 class CarpetBasedParticleFilter():
     def __init__(self, carpet_map: CarpetMap, log_inputs: bool = False):
         """
@@ -74,9 +78,6 @@ class CarpetBasedParticleFilter():
         Setup the particle filter.
 
         """
-
-        WEIGHT_FN_P = 0.95
-        N_PARTICLES = 500
 
         # initialisation of particle filter implementation
         # refer https://github.com/johnhw/pfilter/blob/master/README.md
@@ -99,8 +100,12 @@ class CarpetBasedParticleFilter():
             # and the sum of all cells = 1.
             p_mat = np.zeros_like(self.carpet_map.grid, dtype=float)
             matching = self.carpet_map.grid == self._most_recent_color.index
-            p_mat[matching] = WEIGHT_FN_P / np.sum(matching)
-            p_mat[~matching] = (1 - WEIGHT_FN_P) / np.sum(~matching)
+            num_matches = np.sum(matching)
+            if num_matches == 0 or num_matches == self.carpet_map.grid.size:
+                p_mat[:] = 1 / self.carpet_map.grid.size
+            else:
+                p_mat[matching] = WEIGHT_FN_P / np.sum(matching)
+                p_mat[~matching] = (1 - WEIGHT_FN_P) / np.sum(~matching)
 
             # sample from the grid using the probabilities from above
             p_mat_flat = p_mat.flatten()
@@ -181,6 +186,22 @@ class CarpetBasedParticleFilter():
             self._pfilter.update(observed=None, odom=odom_array)
         else:
             self._pfilter.update(np.array([color.index]), odom=odom_array)
+
+    def seed(self,
+             seed_pose: Pose,
+             pos_std_dev: float = 1.,
+             heading_std_dev: float = 0.3) -> None:
+        """
+        Reinitialise particles around given seed pose
+        Particles are initialised with standard deviations around
+        position and heading as specified
+        """
+        self._pfilter.particles = independent_sample([
+            norm(loc=seed_pose.x, scale=pos_std_dev).rvs,
+            norm(loc=seed_pose.y, scale=pos_std_dev).rvs,
+            norm(loc=seed_pose.heading, scale=heading_std_dev).rvs,
+            norm(loc=0, scale=0).rvs,
+        ])(N_PARTICLES)
 
     def get_current_pose(self) -> Pose:
         if self._pfilter is None:

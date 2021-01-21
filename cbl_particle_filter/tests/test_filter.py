@@ -1,16 +1,19 @@
 import tempfile
 import pytest
 import numpy as np
+from scipy.stats import circstd
 from ..simulator import make_map, make_input_data
-from ..filter import CarpetBasedParticleFilter, load_input_log, OdomMeasurement
-from ..colors import LIGHT_BLUE
+from ..filter import CarpetBasedParticleFilter, load_input_log, OdomMeasurement, Pose
+from ..carpet_map import generate_random_map
+from ..colors import LIGHT_BLUE, UNCLASSIFIED
+
+plot = False
+
+if plot:
+    from ..visualisation import plot_map, plot_particles, plot_pose
 
 
 def test_filter_perfect_data():
-    plot = False
-
-    if plot:
-        from ..visualisation import plot_map, plot_particles, plot_pose
 
     carpet = make_map()
     simulated_data = make_input_data(
@@ -107,3 +110,63 @@ def test_init():
     assert sum(color_of_tiles_under_the_particles ==
                LIGHT_BLUE.index) / N_PARTICLES == pytest.approx(WEIGHT_FN_P,
                                                                 abs=0.01)
+
+
+def test_seed():
+    """
+    Start particle filter in large map with randomly distributed particles.
+    Seed filter, confirm that particles are distributed around the seed pose
+    """
+    np.random.seed(123)
+    carpet = generate_random_map(shape=(100, 100), cell_size=0.5)
+
+    particle_filter = CarpetBasedParticleFilter(carpet)
+
+    particle_filter.update(odom=OdomMeasurement(dx=0, dy=0, dheading=0),
+                           color=UNCLASSIFIED)
+
+    seed_pose = Pose(x=25, y=25, heading=np.pi)
+    pos_tol = 2
+    heading_tol = 0.3
+    pos_std_dev = 1.
+    heading_std_dev = 0.3
+
+    def position_difference(p1: Pose, p2: Pose):
+        return np.sqrt(
+            np.sum((np.array([p1.x, p1.y]) - np.array([p2.x, p2.y]))**2))
+
+    def angular_difference(p1: Pose, p2: Pose):
+        return np.abs((np.mod(p1.heading - p2.heading + np.pi, 2 * np.pi)) -
+                      np.pi)
+
+    def particles_in_tollerance() -> bool:
+        particles = particle_filter.get_particles()
+        pose = particle_filter.get_current_pose()
+
+        return (position_difference(pose, seed_pose) < pos_tol
+                and angular_difference(pose, seed_pose) < heading_tol
+                and np.std(particles[:, 0]) < pos_std_dev * 1.1
+                and np.std(particles[:, 1]) < pos_std_dev * 1.1
+                and circstd(particles[:, 2]) < heading_std_dev * 1.1)
+
+    # initially expect particles spread out
+    assert not particles_in_tollerance()
+
+    # after seeding, particles should be distributed closely around
+    # the seed position
+
+    particle_filter.seed(seed_pose,
+                         pos_std_dev=pos_std_dev,
+                         heading_std_dev=heading_std_dev)
+
+    assert particles_in_tollerance()
+    if plot:
+        plot_map(carpet, show=False)
+        plot_particles(particle_filter._pfilter.particles, show=False)
+        estimated_pose = particle_filter.get_current_pose()
+        plot_pose(
+            estimated_pose,
+            color="red",
+            show=False,
+        )
+        plot_pose(seed_pose)
