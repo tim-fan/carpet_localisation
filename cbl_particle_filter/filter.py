@@ -61,7 +61,10 @@ N_PARTICLES = 500
 
 
 class CarpetBasedParticleFilter():
-    def __init__(self, carpet_map: CarpetMap, log_inputs: bool = False):
+    def __init__(self,
+                 carpet_map: CarpetMap,
+                 log_inputs: bool = False,
+                 resample_proportion=0):
         """
         Initialise with a given map.
         if `log_inputs` is set True, all inputs to `update` will be logged,
@@ -71,6 +74,7 @@ class CarpetBasedParticleFilter():
         self.log_inputs = log_inputs
         self.input_log = []
         self._pfilter = None
+        self.resample_proportion = resample_proportion
         self._most_recent_color = None  # used in pfilter initialisation fn
 
     def _pfilter_init(self):
@@ -153,15 +157,16 @@ class CarpetBasedParticleFilter():
             life_span += 1
             return np.column_stack((poses, life_span))
 
-        self._pfilter = ParticleFilter(prior_fn=prior_fn,
-                                       observe_fn=observe_fn,
-                                       n_particles=N_PARTICLES,
-                                       dynamics_fn=odom_update,
-                                       noise_fn=lambda x, odom: gaussian_noise(
-                                           x, sigmas=[0.05, 0.05, 0.05, 0]),
-                                       weight_fn=weight_fn,
-                                       resample_proportion=0.1,
-                                       column_names=columns)
+        self._pfilter = ParticleFilter(
+            prior_fn=prior_fn,
+            observe_fn=observe_fn,
+            n_particles=N_PARTICLES,
+            dynamics_fn=odom_update,
+            noise_fn=lambda x, odom: gaussian_noise(
+                x, sigmas=[0.05, 0.05, 0.05, 0]),
+            weight_fn=weight_fn,
+            resample_proportion=self.resample_proportion,
+            column_names=columns)
 
     def update(self,
                odom: OdomMeasurement,
