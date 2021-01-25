@@ -113,7 +113,6 @@ class CarpetBasedParticleFilter():
 
             # sample from the grid using the probabilities from above
             p_mat_flat = p_mat.flatten()
-            print(p_mat_flat)
             selected_grid_linear_indices = np.random.choice(range(
                 len(p_mat_flat)),
                                                             size=n_particles,
