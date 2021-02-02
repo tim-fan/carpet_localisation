@@ -103,7 +103,12 @@ class CarpetBasedParticleFilter():
             # which match the most recent color equals WEIGHT_FN_P
             # and the sum of all cells = 1.
             p_mat = np.zeros_like(self.carpet_map.grid, dtype=float)
-            matching = self.carpet_map.grid == self._most_recent_color.index
+
+            if self._most_recent_color is None:
+                matching = np.zeros_like(self.carpet_map.grid)
+            else:
+                matching = self.carpet_map.grid == self._most_recent_color.index
+
             num_matches = np.sum(matching)
             if num_matches == 0 or num_matches == self.carpet_map.grid.size:
                 p_mat[:] = 1 / self.carpet_map.grid.size
@@ -200,6 +205,9 @@ class CarpetBasedParticleFilter():
         Particles are initialised with standard deviations around
         position and heading as specified
         """
+        # if particle filter is not intialised, init it
+        if self._pfilter is None:
+            self._pfilter_init()
         self._pfilter.particles = independent_sample([
             norm(loc=seed_pose.x, scale=pos_std_dev).rvs,
             norm(loc=seed_pose.y, scale=pos_std_dev).rvs,

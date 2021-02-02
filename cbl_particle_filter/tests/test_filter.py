@@ -127,7 +127,7 @@ def test_seed():
 
     seed_pose = Pose(x=25, y=25, heading=np.pi)
     pos_tol = 2
-    heading_tol = 0.3
+    heading_tol = 0.6
     pos_std_dev = 1.
     heading_std_dev = 0.3
 
