@@ -56,15 +56,15 @@ def load_input_log(log_path: str) -> List[Tuple[OdomMeasurement, Color, Pose]]:
         return pickle.load(f)
 
 
-WEIGHT_FN_P = 0.95
-N_PARTICLES = 500
-
-
 class CarpetBasedParticleFilter():
     def __init__(self,
                  carpet_map: CarpetMap,
                  log_inputs: bool = False,
-                 resample_proportion=0):
+                 resample_proportion: float=0,
+                 weight_fn_p: float = 0.95,
+                 odom_pos_noise: float = 0.05,
+                 odom_heading_noise: float = 0.05,
+                 n_particles: int = 500):
         """
         Initialise with a given map.
         if `log_inputs` is set True, all inputs to `update` will be logged,
@@ -74,7 +74,11 @@ class CarpetBasedParticleFilter():
         self.log_inputs = log_inputs
         self.input_log = []
         self._pfilter = None
-        self.resample_proportion = resample_proportion
+        self._resample_proportion = resample_proportion
+        self._weight_fn_p = weight_fn_p
+        self._odom_pos_noise = odom_pos_noise
+        self._odom_heading_noise = odom_heading_noise
+        self._n_particles = n_particles
         self._most_recent_color = None  # used in pfilter initialisation fn
 
     def _pfilter_init(self):
@@ -94,13 +98,13 @@ class CarpetBasedParticleFilter():
             """
             Sample n random particles from p(x|z)
             i.e. if last color is BEIGE, return a sample
-            where proportion WEIGHT_FN_P of particles lie on
-            random beige cells, and proportion (1-WEIGHT_FN_P)
+            where proportion self._weight_fn_p of particles lie on
+            random beige cells, and proportion (1-self._weight_fn_p)
             lie on other cells
             """
             # create a grid of sample probablilities, equal in shape
             # to the map grid, such that the sum of all cells
-            # which match the most recent color equals WEIGHT_FN_P
+            # which match the most recent color equals self._weight_fn_p
             # and the sum of all cells = 1.
             p_mat = np.zeros_like(self.carpet_map.grid, dtype=float)
 
@@ -113,8 +117,8 @@ class CarpetBasedParticleFilter():
             if num_matches == 0 or num_matches == self.carpet_map.grid.size:
                 p_mat[:] = 1 / self.carpet_map.grid.size
             else:
-                p_mat[matching] = WEIGHT_FN_P / np.sum(matching)
-                p_mat[~matching] = (1 - WEIGHT_FN_P) / np.sum(~matching)
+                p_mat[matching] = self._weight_fn_p / np.sum(matching)
+                p_mat[~matching] = (1 - self._weight_fn_p) / np.sum(~matching)
 
             # sample from the grid using the probabilities from above
             p_mat_flat = p_mat.flatten()
@@ -147,7 +151,7 @@ class CarpetBasedParticleFilter():
             """
             weight p for correct observations, 1-p for incorrect
             """
-            p = WEIGHT_FN_P
+            p = self._weight_fn_p
 
             correct_observation = np.squeeze(hyp_observed) == np.squeeze(
                 real_observed)
@@ -164,12 +168,19 @@ class CarpetBasedParticleFilter():
         self._pfilter = ParticleFilter(
             prior_fn=prior_fn,
             observe_fn=observe_fn,
-            n_particles=N_PARTICLES,
+            n_particles=self._n_particles,
             dynamics_fn=odom_update,
             noise_fn=lambda x, odom: gaussian_noise(
-                x, sigmas=[0.05, 0.05, 0.05, 0]),
+                x, 
+                sigmas=[
+                    self._odom_pos_noise, 
+                    self._odom_pos_noise,
+                    self._odom_heading_noise,
+                    0
+                ]
+            ),
             weight_fn=weight_fn,
-            resample_proportion=self.resample_proportion,
+            resample_proportion=self._resample_proportion,
             column_names=columns)
 
     def update(self,
@@ -213,7 +224,7 @@ class CarpetBasedParticleFilter():
             norm(loc=seed_pose.y, scale=pos_std_dev).rvs,
             norm(loc=seed_pose.heading, scale=heading_std_dev).rvs,
             norm(loc=0, scale=0).rvs,
-        ])(N_PARTICLES)
+        ])(self._n_particles)
 
     def get_current_pose(self) -> Pose:
         if self._pfilter is None:
@@ -236,7 +247,14 @@ class CarpetBasedParticleFilter():
 def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
                                             Optional[Pose]]],
                      carpet: CarpetMap,
-                     plot: bool = True):
+                     seed_pose: Optional[Pose] = None,
+                     resample_proportion: float=0,
+                     weight_fn_p: float = 0.95,
+                     odom_pos_noise: float = 0.05,
+                     odom_heading_noise: float = 0.05,
+                     n_particles: int = 500,
+                     plot: bool = False,
+                     verbose = False) -> List[Pose]:
     """
     Run the filter over given input data
     Input data provided as list of Tuples of odom, color, and optionally ground truth pose
@@ -251,11 +269,30 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
         plt.show()
         frame_count = 0
 
-    particle_filter = CarpetBasedParticleFilter(carpet)
+    particle_filter = CarpetBasedParticleFilter(
+        carpet,
+        resample_proportion=resample_proportion,
+        weight_fn_p = weight_fn_p,
+        odom_pos_noise = odom_pos_noise,
+        odom_heading_noise = odom_heading_noise,
+        n_particles = n_particles)
+
+    if seed_pose:
+        particle_filter.seed(seed_pose)
+
+    post_update_poses = []
+
     for odom, color, ground_truth_pose in input_data:
-        print(f"update with color: {color.name}, odom:{odom}")
+        if verbose:
+            print(f"update with color: {color.name}, odom:{odom}")
 
         particle_filter.update(odom, color)
+
+        post_update_poses.append(particle_filter.get_current_pose())
+
+        if verbose and ground_truth_pose is not None:
+            print(f"ground truth pose: {ground_truth_pose}")
+            print(f"post update pose: {particle_filter.get_current_pose()}")
 
         if plot:
             plot_map(carpet, show=False)
@@ -273,3 +310,5 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
             plt.savefig(f"/tmp/filter_frame_{str(frame_count).zfill(6)}.png")
             frame_count += 1
             plt.cla()
+
+    return post_update_poses
