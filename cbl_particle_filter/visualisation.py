@@ -15,6 +15,7 @@ def plot_map(carpet_map: CarpetMap, show=True):
             [51, 204, 255, 255],
             [241, 230, 218, 255],
             [0, 51, 204, 255],
+            [0, 0, 0, 255],
         ]) / 255)
     map_x_size = carpet_map.grid.shape[1] * carpet_map.cell_size
     map_y_size = carpet_map.grid.shape[0] * carpet_map.cell_size
