@@ -12,3 +12,4 @@ dist/
 htmlcov
 *requirement*.txt
 *.pickle
+.ipynb_checkpoints
