@@ -228,6 +228,8 @@ class CarpetBasedParticleFilter():
             return None
         oldest_particle = np.argmax(self._pfilter.particles[:, 3])
         state = self._pfilter.particles[oldest_particle, :]
+
+        state = self._pfilter.mean_state
         return Pose(x=state[0], y=state[1], heading=state[2])
 
     def get_particles(self) -> np.ndarray:
