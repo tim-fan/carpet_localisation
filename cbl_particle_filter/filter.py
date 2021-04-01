@@ -60,7 +60,7 @@ class CarpetBasedParticleFilter():
     def __init__(self,
                  carpet_map: CarpetMap,
                  log_inputs: bool = False,
-                 resample_proportion: float=0,
+                 resample_proportion: float = 0,
                  weight_fn_p: float = 0.95,
                  odom_pos_noise: float = 0.05,
                  odom_heading_noise: float = 0.05,
@@ -171,14 +171,11 @@ class CarpetBasedParticleFilter():
             n_particles=self._n_particles,
             dynamics_fn=odom_update,
             noise_fn=lambda x, odom: gaussian_noise(
-                x, 
+                x,
                 sigmas=[
-                    self._odom_pos_noise, 
-                    self._odom_pos_noise,
-                    self._odom_heading_noise,
-                    0
-                ]
-            ),
+                    self._odom_pos_noise, self._odom_pos_noise, self.
+                    _odom_heading_noise, 0
+                ]),
             weight_fn=weight_fn,
             resample_proportion=self._resample_proportion,
             column_names=columns)
@@ -248,13 +245,13 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
                                             Optional[Pose]]],
                      carpet: CarpetMap,
                      seed_pose: Optional[Pose] = None,
-                     resample_proportion: float=0,
+                     resample_proportion: float = 0,
                      weight_fn_p: float = 0.95,
                      odom_pos_noise: float = 0.05,
                      odom_heading_noise: float = 0.05,
                      n_particles: int = 500,
                      plot: bool = False,
-                     verbose = False) -> List[Pose]:
+                     verbose=False) -> List[Pose]:
     """
     Run the filter over given input data
     Input data provided as list of Tuples of odom, color, and optionally ground truth pose
@@ -272,10 +269,10 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
     particle_filter = CarpetBasedParticleFilter(
         carpet,
         resample_proportion=resample_proportion,
-        weight_fn_p = weight_fn_p,
-        odom_pos_noise = odom_pos_noise,
-        odom_heading_noise = odom_heading_noise,
-        n_particles = n_particles)
+        weight_fn_p=weight_fn_p,
+        odom_pos_noise=odom_pos_noise,
+        odom_heading_noise=odom_heading_noise,
+        n_particles=n_particles)
 
     if seed_pose:
         particle_filter.seed(seed_pose)
