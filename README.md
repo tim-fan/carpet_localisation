@@ -35,3 +35,12 @@ Or to view output of plotting tests:
 ```bash
 pytest . --show_plot True
 ```
+
+## Dev log
+
+* tried state output as mean of 50% oldest particles. Playback errors in notebook were slightly degraded - will not investigate further.
+
+## Ideas
+
+* for determining current pose from particle cloud - generate a big dataset of particles + ground truth pose combinations. Use this to quickly evaluate options.
+  * Would this be a function which can be learned from enough data? Could an algorithm learn to distinguish between particle clusters, and pick the best one?
