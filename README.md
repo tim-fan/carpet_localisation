@@ -17,6 +17,8 @@ Figure: playback of particle filter using simulated input data (see [simulator.p
 * small red arrows: particle filter particles
 * blue/grey/beige background: carpet color pattern map
 
+For ROS wrapper around this package, see [carpet_localisation_ros](https://github.com/tim-fan/carpet_localisation_ros).
+
 ## Dev setup:
 
 ```
