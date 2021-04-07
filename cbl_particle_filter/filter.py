@@ -62,8 +62,8 @@ class CarpetBasedParticleFilter():
                  log_inputs: bool = False,
                  resample_proportion: float = 0,
                  weight_fn_p: float = 0.95,
-                 odom_pos_noise: float = 0.05,
-                 odom_heading_noise: float = 0.05,
+                 odom_pos_noise: float = 0.01,
+                 odom_heading_noise: float = 0.01,
                  n_particles: int = 500):
         """
         Initialise with a given map.
