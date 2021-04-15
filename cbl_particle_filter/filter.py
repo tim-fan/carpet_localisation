@@ -213,6 +213,11 @@ class CarpetBasedParticleFilter():
         Particles are initialised with standard deviations around
         position and heading as specified
         """
+
+        # log seed in ground truth portion of input log
+        if self.log_inputs:
+            self.input_log.append((None, None, seed_pose))
+
         # if particle filter is not intialised, init it
         if self._pfilter is None:
             self._pfilter_init()
@@ -283,7 +288,14 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
         if verbose:
             print(f"update with color: {color.name}, odom:{odom}")
 
-        particle_filter.update(odom, color)
+        if odom is None and color is None:
+            # seed message
+            seed_pose = ground_truth_pose
+            particle_filter.seed(seed_pose)
+
+        else:
+            # regular update
+            particle_filter.update(odom, color)
 
         post_update_poses.append(particle_filter.get_current_pose())
 
