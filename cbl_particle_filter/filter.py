@@ -256,6 +256,7 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
                      odom_heading_noise: float = 0.05,
                      n_particles: int = 500,
                      plot: bool = False,
+                     use_seed_messages=True,
                      verbose=False) -> List[Pose]:
     """
     Run the filter over given input data
@@ -290,8 +291,9 @@ def offline_playback(input_data: List[Tuple[OdomMeasurement, Color,
 
         if odom is None and color is None:
             # seed message
-            seed_pose = ground_truth_pose
-            particle_filter.seed(seed_pose)
+            if use_seed_messages:
+                seed_pose = ground_truth_pose
+                particle_filter.seed(seed_pose)
 
         else:
             # regular update
