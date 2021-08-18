@@ -27,6 +27,8 @@ For ROS wrapper around this package, see [carpet_localisation_ros](https://githu
 
 For classifier trained to distinguish the four colors of carpet in the target environment, see [carpet_color_classification](https://github.com/tim-fan/carpet_color_classification)
 
+Note: for an overview of the broader project, see [the wiki](https://github.com/tim-fan/carpet_localisation/wiki/Carpet-Localisation).
+
 ## Dev setup:
 
 ```
