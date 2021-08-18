@@ -17,7 +17,15 @@ Figure: playback of particle filter using simulated input data (see [simulator.p
 * small red arrows: particle filter particles
 * blue/grey/beige background: carpet color pattern map
 
+---
+
+![realworld test](docs/source/_static/office_drive.gif)
+
+Figure: localisation test in target environment (carpeted office).
+
 For ROS wrapper around this package, see [carpet_localisation_ros](https://github.com/tim-fan/carpet_localisation_ros).
+
+For classifier trained to distinguish the four colors of carpet in the target environment, see [carpet_color_classification](https://github.com/tim-fan/carpet_color_classification)
 
 ## Dev setup:
 
@@ -37,12 +45,3 @@ Or to view output of plotting tests:
 ```bash
 pytest . --show_plot True
 ```
-
-## Dev log
-
-* tried state output as mean of 50% oldest particles. Playback errors in notebook were slightly degraded - will not investigate further.
-
-## Ideas
-
-* for determining current pose from particle cloud - generate a big dataset of particles + ground truth pose combinations. Use this to quickly evaluate options.
-  * Would this be a function which can be learned from enough data? Could an algorithm learn to distinguish between particle clusters, and pick the best one?
