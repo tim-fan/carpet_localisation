@@ -1,4 +1,6 @@
-# cbl_particle_filter
+# Carpet localisation
+
+## For a full project overview, see [the wiki](https://github.com/tim-fan/carpet_localisation/wiki/Carpet-Localisation)!
 
 A particle filter implementing carpet-based localisation.
 
